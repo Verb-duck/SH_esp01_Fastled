@@ -5,8 +5,9 @@
 
 // ***************************** НАСТРОЙКИ *****************************
  // ----- настройки параметров
-  #define DEBUGING  1
   #define VERSION 1.00
+  #define DEBUGING  1
+  #define key_reset_EEProm 0
 
  // ----- пины подключения
   #define LED_PIN 4              // пин DI светодиодной ленты
@@ -28,10 +29,10 @@
   #define TIME_SUNRISE 40              //время включения рассвета до будильника
   const int time_sunrise = TIME_SUNRISE * 60000 / 256; // вычесление периода добавления яркости рассвета
 
-  auto brightness = create(10);      // яркость по умолчанию (0 - 255)
-  uint8_t red_color_now = 30;
-  uint8_t green_color_now = 180;
-  uint8_t blue_color_now = 255;
+  auto brightness = create(0,"brightness");      // яркость по умолчанию (0 - 255)
+  auto red_color_now = create(30,"red_color");
+  auto green_color_now = create(180,"green_color");
+  auto blue_color_now = create(255,"blue_color");
   
   uint8_t gHue = 0; // rotating "base color" used by many of the patterns
  //--color temperature pattern
@@ -41,8 +42,6 @@
   #define DISPLAYTIME 20
 
   IRrecv IrRemote(IR_PIN);
-
- 
 
  //-------макросы--------- 
   #define PERIOD(x) \
@@ -59,6 +58,7 @@
   #else
   #define PRINT(titly, y)
   #endif
+
  //enum 
   enum MODE_LIGHT_BEDROM {      //нулевой не отправляет по сериал, NULL_LIGHT как заглушка
     NULL_LIGHT,
@@ -71,7 +71,7 @@
     SUNSET_LIGHT,         //закат 
     MULTI_COLOR_LIGHT,          //эффекты
   };
-  MODE_LIGHT_BEDROM mode_light_bedroom(OFF_LIGHT);
+  auto mode_light_bedroom = create(OFF_LIGHT,"mode light");
     void Cylon(); void rainbow(); void rainbow_With_Glitter();
     void confetti(); void animation();
   void (*multi_color_light)() = Cylon;
@@ -79,18 +79,6 @@
  // ----- настройки радуги 
   float RAINBOW_STEP = 5.00;         // шаг изменения цвета радуги
 
- // ----- отрисовка
-
-  /*Цвета для HSV    
-    HUE_RED
-    HUE_ORANGE
-    HUE_YELLOW
-    HUE_GREEN
-    HUE_AQUA
-    HUE_BLUE
-    HUE_PURPLE
-    HUE_PINK
-  */
   void full_paint (const int color , const int saturation, const int hue );
   void start_paint (const int color, const int saturation, const int hue, MODE_LIGHT_BEDROM next );
   void setBrightness(); 
@@ -106,6 +94,7 @@ void setup() {
   FastLED.clear();
   FastLED.show(); 
 
+  memory.update(key_reset_EEProm);
   IrRemote.enableIRIn();
 }
 
@@ -118,10 +107,13 @@ void animation() {
   setBrightness();  
   static uint32_t timer_waiting;
   static bool flag_one_start = true; 
-  switch (mode_light_bedroom) {         
+  switch (mode_light_bedroom.getValue()) {         
   case (COLOR_LIGHT) :
     if(an_action) 
-      full_paint (red_color_now, green_color_now, blue_color_now);
+    {
+      full_paint (red_color_now.getValue(), green_color_now.getValue(), blue_color_now.getValue());
+      an_action = false;
+    }
     break;
   case (START_LIGHT) :
     if (flag_one_start)  {          //задержка на включение света
@@ -129,14 +121,14 @@ void animation() {
       timer_waiting = millis(); 
     }
     if (millis() - timer_waiting >= 1000) 
-      start_paint (red_color_now, green_color_now, blue_color_now, COLOR_LIGHT);
+      start_paint (red_color_now.getValue(), green_color_now.getValue(), blue_color_now.getValue(), COLOR_LIGHT);
     break;
   
   case (SUNRISE_LIGHT) :
     if (brightness < 255)         //плавный рассвет
       {PERIOD(time_sunrise) {      
         ++brightness; 
-        FastLED.setBrightness(brightness.getValue());
+        // FastLED.setBrightness(brightness.getValue());
     }} 
     {PERIOD (20) {                //эффект искр
       static byte heat[LED_NUM];
@@ -174,7 +166,7 @@ void animation() {
   case (BLACKOUT_LIGHT) :   //плавное затемнение
     {PERIOD(300) {
       --brightness;
-      FastLED.setBrightness(brightness.getValue());  
+      // FastLED.setBrightness(brightness.getValue());  
       if (brightness == 0)  
       mode_light_bedroom = OFF_LIGHT; 
     }}  
@@ -186,7 +178,7 @@ void animation() {
         ++brightness;
         for( int i = 0; i < LED_NUM; i++) 
         leds[i] = CHSV(0, 200, 255);
-        FastLED.setBrightness(brightness.getValue());     
+        // FastLED.setBrightness(brightness.getValue());     
       }
     }}
     break;
@@ -195,7 +187,8 @@ void animation() {
     if(an_action)
     {
       flag_one_start = true;
-      FastLED.clear();    
+      FastLED.clear();
+      an_action = false;    
     }
     break; 
   case (MULTI_COLOR_LIGHT) :
@@ -203,7 +196,7 @@ void animation() {
   default :
     break;
   }
-  an_action = false;
+  
       
  }
   void setBrightness()
@@ -274,28 +267,28 @@ void animation() {
         break;  
     //цвета
       case BUTT_RED_UP :
-        red_color_now++;
-        Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
+        ++red_color_now;
+        // Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
         break;
       case BUTT_RED_DOWN :
-        red_color_now--;
-        Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
+        --red_color_now;
+        // Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
         break;
       case BUTT_GREEN_UP :
-        green_color_now++;
-        Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
+        ++green_color_now;
+        // Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
         break;
       case BUTT_GREEN_DOWN :
-        green_color_now--;
-        Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
+        --green_color_now;
+        // Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
         break;
       case BUTT_BLUE_UP :
-        blue_color_now++;
-        Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
+        ++blue_color_now;
+        // Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
         break;
       case BUTT_BLUE_DOWN :
-        blue_color_now--;
-        Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
+        ++blue_color_now;
+        // Serial.print(red_color_now);Serial.print(" ");Serial.print(green_color_now);Serial.print(" ");Serial.println(blue_color_now);
         break;
      //1 столбец
       case BUTT_RED : 
