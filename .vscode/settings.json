@@ -14,5 +14,6 @@
     "type_traits": "cpp",
     "utility": "cpp",
     "variant": "cpp"
-  }
+  },
+  "git.ignoreLimitWarning": true
 }

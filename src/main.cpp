@@ -9,6 +9,9 @@
  // ----- пины подключения
   #define LED_PIN 4              // пин DI светодиодной ленты
   #define IR_PIN 3                // пин ИК приёмника
+ //-------переменные
+  boolean an_action = true;
+  boolean ir_flag;
 
  // ----- настройки ленты
   #include <FastLED.h>
@@ -24,28 +27,22 @@
   const int time_sunrise = TIME_SUNRISE * 60000 / 256; // вычесление периода добавления яркости рассвета
 
   byte brightness = 10;      // яркость по умолчанию (0 - 255)
-  uint8_t random_color;
-  uint8_t random_saturation;
   uint8_t red_color_now = 30;
   uint8_t green_color_now = 180;
   uint8_t blue_color_now = 255;
   
   uint8_t gHue = 0; // rotating "base color" used by many of the patterns
-  uint8_t sped_led_show = 50;
  //--color temperature pattern
   #define TEMPERATURE_1 Tungsten100W
   #define TEMPERATURE_2 OvercastSky
   // How many seconds to show each temperature before switching
   #define DISPLAYTIME 20
-  // How many seconds to show black between switches
-  #define BLACKTIME   3
 
   #include <IRremote.h>
   IRrecv IrRemote(IR_PIN);
+  #include <EEPROM_memory.h>
 
- //-------переменные
-  boolean an_action = true;
-  boolean ir_flag;
+ 
 
  //-------макросы--------- 
   #define PERIOD(x) \
@@ -83,8 +80,6 @@
   float RAINBOW_STEP = 5.00;         // шаг изменения цвета радуги
 
  // ----- отрисовка
-  #define MODE 4                    // режим при запуске
-  #define MAIN_LOOP 5               // период основного цикла отрисовки (по умолчанию 5)
 
   /*Цвета для HSV    
     HUE_RED
@@ -102,7 +97,7 @@
   void remoteTick();
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.print("Version: "); Serial.println(VERSION);
   
  //---------лента 2811------- 
@@ -504,10 +499,6 @@ void animation() {
     leds[0] = TEMPERATURE_2; // show indicator pixel
   }
 
-  // Black out the LEDs for a few secnds between color changes
-  // to let the eyes and brains adjust
-  //if( (secs % DISPLAYTIME) < BLACKTIME) {
-  //  memset8( leds, 0, LED_NUM * sizeof(CRGB));
-  //}
+ 
  }
 
