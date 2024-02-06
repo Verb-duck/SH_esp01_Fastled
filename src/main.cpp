@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #include "button_remote_control.h"
+#include <EEPROM_memory.h>
+#include <IRremote.h>
 
 // ***************************** НАСТРОЙКИ *****************************
  // ----- настройки параметров
@@ -26,7 +28,7 @@
   #define TIME_SUNRISE 40              //время включения рассвета до будильника
   const int time_sunrise = TIME_SUNRISE * 60000 / 256; // вычесление периода добавления яркости рассвета
 
-  byte brightness = 10;      // яркость по умолчанию (0 - 255)
+  auto brightness = create(10);      // яркость по умолчанию (0 - 255)
   uint8_t red_color_now = 30;
   uint8_t green_color_now = 180;
   uint8_t blue_color_now = 255;
@@ -38,9 +40,7 @@
   // How many seconds to show each temperature before switching
   #define DISPLAYTIME 20
 
-  #include <IRremote.h>
   IRrecv IrRemote(IR_PIN);
-  #include <EEPROM_memory.h>
 
  
 
@@ -102,7 +102,7 @@ void setup() {
   
  //---------лента 2811------- 
   FastLED.addLeds<WS2811, LED_PIN, BRG>(leds, LED_NUM).setCorrection( TypicalLEDStrip );
-  FastLED.setBrightness(brightness);
+  FastLED.setBrightness(brightness.getValue());
   FastLED.clear();
   FastLED.show(); 
 
@@ -135,8 +135,8 @@ void animation() {
   case (SUNRISE_LIGHT) :
     if (brightness < 255)         //плавный рассвет
       {PERIOD(time_sunrise) {      
-        brightness++; 
-        FastLED.setBrightness(brightness);
+        ++brightness; 
+        FastLED.setBrightness(brightness.getValue());
     }} 
     {PERIOD (20) {                //эффект искр
       static byte heat[LED_NUM];
@@ -173,8 +173,8 @@ void animation() {
     
   case (BLACKOUT_LIGHT) :   //плавное затемнение
     {PERIOD(300) {
-      brightness--;
-      FastLED.setBrightness(brightness);  
+      --brightness;
+      FastLED.setBrightness(brightness.getValue());  
       if (brightness == 0)  
       mode_light_bedroom = OFF_LIGHT; 
     }}  
@@ -183,10 +183,10 @@ void animation() {
   case (NIGHT_LIGHT) :      //ночная подсветка
     {PERIOD(200){ 
       if (brightness < 50) { 
-        brightness++;
+        ++brightness;
         for( int i = 0; i < LED_NUM; i++) 
         leds[i] = CHSV(0, 200, 255);
-        FastLED.setBrightness(brightness);     
+        FastLED.setBrightness(brightness.getValue());     
       }
     }}
     break;
@@ -209,10 +209,10 @@ void animation() {
   void setBrightness()
   {
     static byte last_brigthness;
-    if(last_brigthness != brightness)
+    if(last_brigthness != brightness.getValue())
     {
-      last_brigthness = brightness; 
-      FastLED.setBrightness(brightness);
+      last_brigthness = brightness.getValue(); 
+      FastLED.setBrightness(brightness.getValue());
     }
   }
   //пришла команда на смену
